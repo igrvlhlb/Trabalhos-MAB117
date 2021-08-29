@@ -62,20 +62,20 @@ int main(int argc, char *argv[]) {
 			"nthreads: %d\n"
 			"Expressão: %s\n",
 			a, b, subint, nthreads, math_expr);
-	puts("======\nVariaveis definidas\n======");
-	struct expr_var *atual = user_vars.head;
+	fputs("======\nVariáveis definidas\n======", stderr);
+	struct expr_var *var_atual = user_vars.head;
 	int cnt = 0;
-	while(atual != NULL) {
+	while(var_atual != NULL) {
 		fprintf(stderr, "Variavel: %s\n"
 				"Valor: %lf\n"
 				"Next: %p\n",
-				atual->name,
-				atual->value,
-				atual->next);
-		atual = atual->next;
+				var_atual->name,
+				var_atual->value,
+				var_atual->next);
+		var_atual = var_atual->next;
 		cnt++;
-		if (atual != NULL) {
-			puts("------");
+		if (var_atual != NULL) {
+			fputs("------", stderr);
 		}
 	}
 #endif
