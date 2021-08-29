@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
 	init_vars(&user_vars);
 
 #ifdef DEBUG
+	/*{{{ (serve para fold automatico do vim) */
 	fprintf(stderr, "Intervalo: [%lf, %lf]\n"
 			"Subintervalos: %d\n"
 			"nthreads: %d\n"
@@ -78,6 +79,7 @@ int main(int argc, char *argv[]) {
 			fputs("------", stderr);
 		}
 	}
+	/*}}}*/
 #endif
 
 	expr_destroy(expr, &user_vars);
