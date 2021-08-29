@@ -66,7 +66,7 @@ double sequential_simpson_method(struct expr *func, struct expr_var_list *vars, 
 	resultado = start + end;
 
 	for (int i = 1; i < (n << 1); ++i) {
-		if (i & 1 == 1) {
+		if ((i & 1) == 1) {
 			resultado += expr_eval(func) * 4.0;
 		} else { // termo par tem peso 2
 			resultado += expr_eval(func) * 2.0;
