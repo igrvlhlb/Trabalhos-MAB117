@@ -38,6 +38,8 @@ int main(int argc, char *argv[]) {
 	a = atof(argv[1]);
 	b = atof(argv[2]);
 	subint = atoi(argv[3]);
+	/* subint deve ser par */
+	if (subint % 2 == 1) subint += 1;
 	nthreads = atoi(argv[4]);
 
 	fprintf(stderr, "Expressao lida: %s\n", math_expr);
