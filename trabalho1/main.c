@@ -44,8 +44,11 @@ int main(int argc, char *argv[]) {
 
 	fprintf(stderr, "Expressao lida: %s\n", math_expr);
 
-	double resultado = simpson_method(math_expr, a, b, subint, nthreads);
+	double resultado = sequential_simpson_method(math_expr, a, b, subint);
 	printf("Resultado = %lf\n", resultado);
+
+	double resultado_conc = simpson_method(math_expr, a, b, subint, nthreads);
+	printf("Resultado (concorrente)= %lf\n", resultado_conc);
 
 	return 0;
 }

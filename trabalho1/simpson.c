@@ -160,15 +160,6 @@ double simpson_method(char *math_expr, double a, double b, int n, int nthreads) 
 	resultado += start + end;
 
 	for (thread = 0; thread < nthreads; thread++){
-		/*
-		// cria nova expressão (para que cada thread tenha seu proprio contexto)
-		struct expr_var_list loc_vars = {NULL};
-		struct expr *loc_func = expr_create(math_expr, sizeof(math_expr), &loc_vars, user_funcs);
-		init_vars(&loc_vars);
-		if (loc_func == NULL) {
-			fprintf(stderr, "Erro ao compilar a expressão (simpson_method(), thread %d)\n", thread);
-		}
-		*/
 
 		args[thread] = (struct simpson_args){
 			.h = h,
