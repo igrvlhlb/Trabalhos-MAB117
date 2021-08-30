@@ -15,3 +15,6 @@ all: main
 
 test: stress_test
 	./stress_test
+
+clean:
+	rm simpson.o main stress_test
