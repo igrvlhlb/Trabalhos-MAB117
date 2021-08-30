@@ -204,14 +204,25 @@ double simpson_method(char *math_expr, double a, double b, int n, int nthreads) 
  * 	- a, b: intervalo de integração
  * 	- n: 	quantidade de subintervalos
  */
-double sequential_simpson_method(struct expr *func, struct expr_var_list *vars, double a, double b, int n) {
+double sequential_simpson_method(char *math_expr, double a, double b, int n) {
 	double resultado;
 
 	// tamanho do subintervalo
 	double step = (b - a) / n / 2.0;
 
+	// inicializa lista de variáveis
+	struct expr_var_list vars = {NULL};
+	// compila a expressão
+	struct expr *func = expr_create(math_expr, strlen(math_expr), &vars, user_funcs);
+	if (func == NULL) {
+		fprintf(stderr, "Erro ao compilar a expressão (sequential_simpson_method())\n");
+		exit(1);
+	}
+	// adiciona à lista constantes pré-definidas
+	init_vars(&vars);
+
 	/* obtem o endereco de x */
-	struct expr_var *x = expr_var(vars, "x", 1);
+	struct expr_var *x = expr_var(&vars, "x", 1);
 
 	x->value = b;
 	double end = expr_eval(func);
@@ -229,6 +240,8 @@ double sequential_simpson_method(struct expr *func, struct expr_var_list *vars, 
 		}
 		x->value += step;
 	}
+
+	expr_destroy(func, &vars);
 
 	return resultado / 3.0 * step;
 }
