@@ -1,9 +1,6 @@
 /* compilar com flag -DDEBUG se desejar a impressao de informacoes adicionais */
-
-#include "expr.h"
-#include "funcs.h"
-#include "consts.h"
-#include <math.h>
+#include <stdio.h>
+#include "simpson.h"
 
 #define MAX_EXPR 128 // tamanho maximo da expressao matematica
 
@@ -17,8 +14,6 @@ int subint; 	// subintervalos
 int main(int argc, char *argv[]) {
 
 	char math_expr[MAX_EXPR];
-	struct expr *expr;
-	struct expr_var_list user_vars = {NULL};
 
 	/* menos argumentos que o necessario */
 	if (argc < 6) {
@@ -47,41 +42,8 @@ int main(int argc, char *argv[]) {
 
 	fprintf(stderr, "Expressao lida: %s\n", math_expr);
 
-	expr = expr_create(math_expr, strlen(math_expr), &user_vars, user_funcs);
+	double resultado = simpson_method(math_expr, a, b, subint, nthreads);
+	printf("Resultado = %lf\n", resultado);
 
-	if (expr == NULL) {
-		printf("Syntax error");
-		return 1;
-	}
-
-	init_vars(&user_vars);
-
-#ifdef DEBUG
-	/*{{{ (serve para fold automatico do vim) */
-	fprintf(stderr, "Intervalo: [%lf, %lf]\n"
-			"Subintervalos: %d\n"
-			"nthreads: %d\n"
-			"Expressão: %s\n",
-			a, b, subint, nthreads, math_expr);
-	fputs("======\nVariáveis definidas\n======", stderr);
-	struct expr_var *var_atual = user_vars.head;
-	int cnt = 0;
-	while(var_atual != NULL) {
-		fprintf(stderr, "Variavel: %s\n"
-				"Valor: %lf\n"
-				"Next: %p\n",
-				var_atual->name,
-				var_atual->value,
-				var_atual->next);
-		var_atual = var_atual->next;
-		cnt++;
-		if (var_atual != NULL) {
-			fputs("------", stderr);
-		}
-	}
-	/*}}}*/
-#endif
-
-	expr_destroy(expr, &user_vars);
 	return 0;
 }
