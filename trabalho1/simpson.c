@@ -1,5 +1,9 @@
 #include "expr.h"
+#include "funcs.h"
+#include "consts.h"
 #include <pthread.h>
+
+extern struct expr_func user_funcs[];
 
 struct simpson_args {
 	double h; 	// tamanho do incremento
@@ -8,8 +12,7 @@ struct simpson_args {
 	int thread_id;
 	int nthreads; 	// quantidade de threads
 	double res_parc; // resultado calculado por uma thread
-	struct expr_var_list *vars;
-	struct expr *func;
+	char *math_expr;
 };
 
 /*{{{*/
@@ -41,6 +44,7 @@ void *simpson_method_parc(void *arg) {
 	    thread_id = args->thread_id,
 	    nthreads = args->nthreads;
 	double a = args->a;
+	char *math_expr = args->math_expr;
 
 	int m = n / 2;
 
@@ -53,7 +57,20 @@ void *simpson_method_parc(void *arg) {
 	int ini_impar = (nelems_impar * thread_id) + 1;
 	int fim_impar = nelems_impar * (thread_id + 1);
 
-	struct expr_var *x = expr_var(args->vars, "x", 1);
+
+	// inicializa lista de variáveis
+	struct expr_var_list vars = {NULL};
+	// compila a expressão
+	struct expr *func = expr_create(math_expr, sizeof(math_expr), &vars, user_funcs);
+	// adiciona à lista constantes pré-definidas
+	init_vars(&vars);
+
+	if (func == NULL) {
+		fprintf(stderr, "Erro ao compilar a expressão (thread %d)\n", thread_id);
+		exit(1);
+	}
+	// pega o endereço da var x
+	struct expr_var *x = expr_var(&vars, "x", 1);
 
 	/* trata do caso em que o número de elementos
 	 * não é divisível por nthreads */
@@ -70,7 +87,7 @@ void *simpson_method_parc(void *arg) {
 		int k = 2 * i;
 		int xk = a + (h * k);
 		x->value = xk;
-		result += expr_eval(args->func);
+		result += expr_eval(func);
 	}
 
 	/* somatorio indices impares */
@@ -78,8 +95,11 @@ void *simpson_method_parc(void *arg) {
 		int k = (2 * i) - 1;
 		int xk = a + (h * k);
 		x->value = xk;
-		result += expr_eval(args->func);
+		result += expr_eval(func);
 	}
+
+	// libara recursos
+	expr_destroy(func, &vars);
 
 	args->res_parc = result;
 
@@ -95,7 +115,7 @@ void *simpson_method_parc(void *arg) {
  * 	- n: 	quantidade de subintervalos
  * 	- nthreads: quantidade de threads
  */
-double simpson_method(struct expr *func, struct expr_var_list *vars, double a, double b, int n, int nthreads) {
+double simpson_method(char *math_expr, double a, double b, int n, int nthreads) {
 	double resultado;
 	pthread_t threads[nthreads];
 	struct simpson_args args[nthreads];
@@ -103,29 +123,70 @@ double simpson_method(struct expr *func, struct expr_var_list *vars, double a, d
 	double h = (b - a) / n;
 	int thread;
 
+#ifdef DEBUG
+// {{{
+	fprintf(stderr, "math_expr: %s\n"
+			"[a,b] = [%lf, %lf]\n"
+			"n = %d\n"
+			"nthreads = %d\n",
+			math_expr, a, b,
+			n, nthreads);
+// }}}
+#endif
+
+	// inicializa lista de variáveis
+	struct expr_var_list vars = {NULL};
+	// compila a expressão
+	struct expr *func = expr_create(math_expr, sizeof(math_expr), &vars, user_funcs);
+	if (func == NULL) {
+		fprintf(stderr, "Erro ao compilar a expressão (simpson_method())\n");
+		exit(1);
+	}
+	// adiciona à lista constantes pré-definidas
+	init_vars(&vars);
+
 	/* obtem o endereco de x */
-	struct expr_var *x = expr_var(vars, "x", 1);
+	struct expr_var *x = expr_var(&vars, "x", 1);
 	x->value = b;
 	double end = expr_eval(func);
 	x->value = a;
 	double start = expr_eval(func);
 
+	expr_destroy(func, &vars);
+
 	resultado += start + end;
 
 	for (thread = 0; thread < nthreads; thread++){
+		/*
+		// cria nova expressão (para que cada thread tenha seu proprio contexto)
+		struct expr_var_list loc_vars = {NULL};
+		struct expr *loc_func = expr_create(math_expr, sizeof(math_expr), &loc_vars, user_funcs);
+		init_vars(&loc_vars);
+		if (loc_func == NULL) {
+			fprintf(stderr, "Erro ao compilar a expressão (simpson_method(), thread %d)\n", thread);
+		}
+		*/
+
 		args[thread] = (struct simpson_args){
 			.h = h,
 			.a = a,
 			.n = n,
 			.nthreads = nthreads,
 			.thread_id = thread,
-			.vars = vars
+			.math_expr = math_expr,
+			.res_parc = 0
 		};
-		pthread_create(&threads[thread], NULL, simpson_method_parc, &args[thread]);
+		if(pthread_create(&threads[thread], NULL, simpson_method_parc, &args[thread])){
+			fprintf(stderr, "Erro ao criar thread\n");
+			exit(1);
+		}
 	}
 
 	for (thread = 0; thread < nthreads; thread++) {
-		pthread_join(threads[thread], NULL);
+		if(pthread_join(threads[thread], NULL)) {
+			fprintf(stderr, "Erro join()\n");
+			exit(1);
+		}
 		resultado += args[thread].res_parc; // soma resultado obtido pela thread
 	}
 
