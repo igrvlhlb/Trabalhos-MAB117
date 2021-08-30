@@ -17,7 +17,7 @@ int subint; 	// subintervalos
 int main(int argc, char *argv[]) {
 
 	char math_expr[MAX_EXPR];
-	struct expr *expr;// = expr_create(s, strlen(s), &user_vars, user_funcs);
+	struct expr *expr;
 	struct expr_var_list user_vars = {NULL};
 
 	/* menos argumentos que o necessario */
