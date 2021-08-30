@@ -58,6 +58,15 @@ void *simpson_method_parc(void *arg) {
 	int ini_impar = (nelems_impar * thread_id) + 1;
 	int fim_impar = nelems_impar * (thread_id + 1);
 
+	/* trata do caso em que o número de elementos
+	 * não é divisível por nthreads */
+	if (thread_id == nthreads - 1) { // estamos na ultima thread
+		fim_par = m - 1;
+		fim_impar = m;
+	}
+
+	int i;
+	double result = 0;
 
 	// inicializa lista de variáveis
 	struct expr_var_list vars = {NULL};
@@ -73,22 +82,13 @@ void *simpson_method_parc(void *arg) {
 	// pega o endereço da var x
 	struct expr_var *x = expr_var(&vars, "x", 1);
 
-	/* trata do caso em que o número de elementos
-	 * não é divisível por nthreads */
-	if (thread_id == nthreads - 1) { // estamos na ultima thread
-		fim_par = m - 1;
-		fim_impar = m;
-	}
-
-	int i;
-	double result = 0;
-
 	/* somatorio indices pares */
 	for (i = ini_par; i <= fim_par; i++) {
 		int k = 2 * i;
 		int xk = a + (h * k);
 		x->value = xk;
-		result += expr_eval(func);
+		/* somatorio par tem peso 2 */
+		result += 2 * expr_eval(func);
 	}
 
 	/* somatorio indices impares */
@@ -96,7 +96,8 @@ void *simpson_method_parc(void *arg) {
 		int k = (2 * i) - 1;
 		int xk = a + (h * k);
 		x->value = xk;
-		result += expr_eval(func);
+		/* somatorio impar tem peso 4 */
+		result += 2 * expr_eval(func);
 	}
 
 	// libara recursos
