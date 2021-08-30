@@ -1,10 +1,11 @@
 /* compilar com flag -DDEBUG se desejar a impressao de informacoes adicionais */
 #include <stdio.h>
 #include "simpson.h"
+#include <string.h>
+#include <stdlib.h>
 
 #define MAX_EXPR 128 // tamanho maximo da expressao matematica
 
-extern struct expr_func user_funcs[];
 
 double a, b; 	// intervalo de integração
 int nthreads; 	// numero de threads

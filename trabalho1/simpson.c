@@ -49,14 +49,12 @@ void *simpson_method_parc(void *arg) {
 
 	int m = n / 2;
 
-	int nelems_par = (m - 1) / nthreads; // quantidade de elementos (indice par) calculados por thread
-	int nelems_impar = m / nthreads; // quantidade de elementos (indice impar) calculados por thread
+	int nelems = m / nthreads; // quantidade de elementos calculados por thread
 
-	int ini_par = (nelems_par * thread_id) + 1;
-	int fim_par = nelems_par * (thread_id + 1);
+	int ini = (nelems * thread_id) + 1;
 
-	int ini_impar = (nelems_impar * thread_id) + 1;
-	int fim_impar = nelems_impar * (thread_id + 1);
+	int fim_par, fim_impar;
+	fim_par = fim_impar = nelems * (thread_id + 1);
 
 	/* trata do caso em que o número de elementos
 	 * não é divisível por nthreads */
@@ -83,7 +81,7 @@ void *simpson_method_parc(void *arg) {
 	struct expr_var *x = expr_var(&vars, "x", 1);
 
 	/* somatorio indices pares */
-	for (i = ini_par; i <= fim_par; i++) {
+	for (i = ini; i <= fim_par; i++) {
 		int k = 2 * i;
 		int xk = a + (h * k);
 		x->value = xk;
@@ -92,12 +90,12 @@ void *simpson_method_parc(void *arg) {
 	}
 
 	/* somatorio indices impares */
-	for (i = ini_impar; i <= fim_impar; i++) {
+	for (i = ini; i <= fim_impar; i++) {
 		int k = (2 * i) - 1;
 		int xk = a + (h * k);
 		x->value = xk;
 		/* somatorio impar tem peso 4 */
-		result += 2 * expr_eval(func);
+		result += 4 * expr_eval(func);
 	}
 
 	// libara recursos

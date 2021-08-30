@@ -1,17 +1,16 @@
 CC = gcc
 CFLAGS = -lpthread -lm
 
+all: main
 
 simpson.o: simpson.c simpson.h
 	${CC} ${CFLAGS} -c $<
 
 main: main.c simpson.o
-	${CC} ${CFLAGS} -o main $^
+	${CC} ${CFLAGS} -o $@ $^
 
 stress_test: stress_test.c simpson.o
 	${CC} ${CFLAGS} -o $@ $^
-
-all: main
 
 test: stress_test
 	./stress_test
