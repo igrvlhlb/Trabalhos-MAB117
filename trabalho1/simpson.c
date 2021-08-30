@@ -2,6 +2,7 @@
 #include "funcs.h"
 #include "consts.h"
 #include <pthread.h>
+//#include "expr_debug.h"
 
 extern struct expr_func user_funcs[];
 
@@ -61,7 +62,7 @@ void *simpson_method_parc(void *arg) {
 	// inicializa lista de variáveis
 	struct expr_var_list vars = {NULL};
 	// compila a expressão
-	struct expr *func = expr_create(math_expr, sizeof(math_expr), &vars, user_funcs);
+	struct expr *func = expr_create(math_expr, strlen(math_expr), &vars, user_funcs);
 	// adiciona à lista constantes pré-definidas
 	init_vars(&vars);
 
@@ -137,7 +138,8 @@ double simpson_method(char *math_expr, double a, double b, int n, int nthreads) 
 	// inicializa lista de variáveis
 	struct expr_var_list vars = {NULL};
 	// compila a expressão
-	struct expr *func = expr_create(math_expr, sizeof(math_expr), &vars, user_funcs);
+	struct expr *func = expr_create(math_expr, strlen(math_expr), &vars, user_funcs);
+	//expr_println(func);
 	if (func == NULL) {
 		fprintf(stderr, "Erro ao compilar a expressão (simpson_method())\n");
 		exit(1);
