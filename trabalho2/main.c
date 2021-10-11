@@ -83,7 +83,7 @@ void consome(void *args) {
 		pthread_mutex_unlock(&buff_lock);
 		sem_post(&slots_vazios);
 
-		/* TODO: ordenar valores no proprio vetor `copia[]` */
+		/* ordena o bloco */ 
 		qsort(copia, N, sizeof(int), my_cmp);
 
 		pthread_mutex_lock(&f_lock);
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 		err(EXIT_FAILURE, "Erro ao abrir o arquivo '%s'", argv[1]);
 	}
 	/* idem */
-	if ((arq_saida = fopen(argv[2], "r")) == NULL) {
+	if ((arq_saida = fopen(argv[2], "w")) == NULL) {
 		err(EXIT_FAILURE, "Erro ao abrir o arquivo '%s'", argv[2]);
 	}
 
@@ -133,10 +133,7 @@ int main(int argc, char *argv[]) {
 	pthread_mutex_init(&buff_lock, NULL);
 	pthread_mutex_init(&f_lock, NULL);
 
-	/* esta thread (principal) sera o produtor */
-	produz();
-
-	/* TODO: criar as threads consumidoras/escritoras, que executam `consome()` */
+	/* cria threads */
 	pthread_t tid_prod;
 
 	pthread_t* tid_cons;
@@ -172,6 +169,7 @@ int main(int argc, char *argv[]) {
 	sem_destroy(&slots_vazios);
 	sem_destroy(&slots_cheios);
 
+	free(tid_cons);
 	free(buffer);
 	return 0;
 }
