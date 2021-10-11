@@ -139,19 +139,14 @@ int main(int argc, char *argv[]) {
 	pthread_t* tid_cons;
 	tid_cons = (pthread_t *)malloc(sizeof(int) * C);
 
-	if (pthread_create(&tid_prod, NULL, produz, NULL)) {
-		err(EXIT_FAILURE, "Erro -- thread create");
-	}
-
 	for (int id = 0; id < C; ++id) {
 		if (pthread_create(&tid_cons[id], NULL, consome, NULL)) {
 			err(EXIT_FAILURE, "Erro -- thread create");
 		}
 	}
 
-	if (pthread_join(tid_prod, NULL)) {
-		err(EXIT_FAILURE, "Erro -- join thread");
-	}
+	/* executa o produtor na thread principal */
+	produz();
 
 	for (int id = 0; id < C; ++id) {
 		if (pthread_join(tid_cons[id], NULL)) {
