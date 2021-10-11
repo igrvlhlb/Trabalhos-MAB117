@@ -65,7 +65,7 @@ void consome(void *args) {
 		sem_wait(&slots_cheios);
 
 		/* se a entrada acabar, encerra a thread */
-		if (continua == false){
+		if (continua == false && in == out){
 			/* permite que outra thread seja desbloqueada cajo esteja bloqueada*/
 			sem_post(&slots_cheios);
 			pthread_exit(0);
