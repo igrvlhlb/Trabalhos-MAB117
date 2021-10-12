@@ -4,6 +4,7 @@
 #include <semaphore.h>
 #include <err.h>
 #include <stdbool.h>
+#include "timer.h"
 
 #define BUFFSIZE 10 // tamanho do buffer
 
@@ -39,6 +40,7 @@ void produz(void) {
 		}
 		sem_wait(&slots_vazios);
 		pthread_mutex_lock(&buff_lock);
+		fprintf(stderr, "PRODUTOR adquiriu o lock\n");
 		/* posicao para escrever no buffer */
 		int buffpos = in * N;
 		/* escreve no buffer */
@@ -46,14 +48,16 @@ void produz(void) {
 			buffer[buffpos + i] = lidos[i];
 		}
 		in = (in + 1) % BUFFSIZE;
+		fprintf(stderr, "PRODUTOR vai soltar o lock\n");
 		pthread_mutex_unlock(&buff_lock);
 		sem_post(&slots_cheios);
 		total -= N;
 	}
-	/* caso haja alguma thread parada no sem_wait(), a libera */
-	sem_post(&slots_cheios);
 	/* indica que nao ha mais entrada */
 	continua = false;
+	/* caso haja alguma thread parada no sem_wait(), a libera */
+	sem_post(&slots_cheios);
+	fprintf(stderr, "PRODUTOR\tVAI\tTERMINAR\n");
 }
 
 /* Funcao que eh executada pelas threads consumidoras/escritoras */
@@ -61,17 +65,20 @@ void consome(void *args) {
 	int total; // primeiro valor do arquivo é a quantidade de números
 	int copia[N]; // copia do buffer
 
-	while (1) {
+	while (continua == true) {
+
 		sem_wait(&slots_cheios);
 
 		/* se a entrada acabar, encerra a thread */
-		if (continua == false && in == out){
+		if (continua == false/* && in == out */){
 			/* permite que outra thread seja desbloqueada cajo esteja bloqueada*/
 			sem_post(&slots_cheios);
+			fprintf(stderr, "CONSUMIDOR\tVAI\tTERMINAR\n");
 			pthread_exit(0);
 		}
 
 		pthread_mutex_lock(&buff_lock);
+		fprintf(stderr, "CONSUMIDOR adquiriu o lock\n");
 
 		/* posicao para ler do buffer */
 		int buffpos = out * N;
@@ -80,6 +87,7 @@ void consome(void *args) {
 			copia[i] = buffer[buffpos + i];
 		}
 		out = (out + 1) % BUFFSIZE;
+		fprintf(stderr, "CONSUMIDOR vai soltar o lock\n");
 		pthread_mutex_unlock(&buff_lock);
 		sem_post(&slots_vazios);
 
@@ -87,11 +95,13 @@ void consome(void *args) {
 		qsort(copia, N, sizeof(int), my_cmp);
 
 		pthread_mutex_lock(&f_lock);
+		fprintf(stderr, "CONSUMIDOR adquiriu o lock [arquivo]\n");
 		/* neste ponto o vetor `copia[]` esta ordenado */
 		for (int i = 0; i < N; i++) {
 			fprintf(arq_saida, "%d ", copia[i]);
 		}
 		putc('\n', arq_saida);
+		fprintf(stderr, "CONSUMIDOR vai soltar o lock [arquivo]\n");
 		pthread_mutex_unlock(&f_lock);
 	}
 }
@@ -102,6 +112,11 @@ void consome(void *args) {
  * 	- N: Número de valores por linha
  * 	- C: número de threads consumidoras/escritoras */
 int main(int argc, char *argv[]) {
+	/* variaveis que guardarao o tempo paralelo e sequencial do programa */
+	double tseq, tseq_0, tseq_f, tpar, tpar_0, tpar_f;
+
+	GET_TIME(tseq_0);
+
 	in = out = 0;
 
 	if (argc < 5) {
@@ -127,6 +142,12 @@ int main(int argc, char *argv[]) {
 		err(EXIT_FAILURE, "Erro ao alocar memoria para o buffer");
 	}
 
+	GET_TIME(tseq_f);
+
+	tseq = tseq_f - tseq_0;
+
+	GET_TIME(tpar_0);
+
 	/* inicializacao das variaveis de sincronizacao */
 	sem_init(&slots_vazios, 0, BUFFSIZE);
 	sem_init(&slots_cheios, 0, 0);
@@ -140,7 +161,7 @@ int main(int argc, char *argv[]) {
 	tid_cons = (pthread_t *)malloc(sizeof(int) * C);
 
 	for (int id = 0; id < C; ++id) {
-		if (pthread_create(&tid_cons[id], NULL, consome, NULL)) {
+		if (pthread_create(&tid_cons[id], NULL, (void *)consome, NULL)) {
 			err(EXIT_FAILURE, "Erro -- thread create");
 		}
 	}
@@ -154,9 +175,6 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	/* fecha os arquivos */
-	fclose(arq_entrada);
-	fclose(arq_saida);
 
 	/* destruicao das variaveis de sincronizacao */
 	pthread_mutex_destroy(&buff_lock);
@@ -164,7 +182,26 @@ int main(int argc, char *argv[]) {
 	sem_destroy(&slots_vazios);
 	sem_destroy(&slots_cheios);
 
+	GET_TIME(tpar_f);
+
+	tpar = tpar_f - tpar_0;
+
+	GET_TIME(tseq_0);
+
+	/* fecha os arquivos */
+	fclose(arq_entrada);
+	fclose(arq_saida);
+
 	free(tid_cons);
 	free(buffer);
+
+	GET_TIME(tseq_f);
+
+	tseq += tseq_f - tseq_0;
+
+	/* imprime o nome do arquivo de saida, quantidade de threads,
+	 * tempo sequencial e tempo paralelo */
+	printf("%s %d %f %f\n", argv[2], C, tseq, tpar);
+
 	return 0;
 }
